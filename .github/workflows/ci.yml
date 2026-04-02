@@ -1,0 +1,48 @@
+name: Guestbook CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: guestbook
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: pass123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d guestbook"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests (optional)
+        run: |
+          echo "You can add automated tests here"
+
+      - name: Build Docker image
+        run: docker build -t guestbook-api .
+
+      - name: Run Docker container
+        run: docker run -d --name guestbook-api -p 3000:3000 guestbook-api
